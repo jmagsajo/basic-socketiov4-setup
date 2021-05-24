@@ -1,29 +1,50 @@
 import * as express from "express";
 import * as dotenv from "dotenv";
 import { Server } from "socket.io";
+import * as protocol from "http";
 
-dotenv.config();
+class SocketIO{
 
-const app = express();
-let port = process.env.PORT;
+	public app: express.Application;
+	public http : any;
+	public io : any;
+	public port : string;
 
-let http = require("http").Server(app);
-// set up socket.io and bind it to our
-// http server.
-const io = new Server(http, {
-    cors: { origin: "*" } 
-});
+	constructor() {
+		dotenv.config();
+		this.app = express();
+		this.http = new protocol.Server(this.app);
+		this.port = process.env.PORT;
+		this.config();
+		this.events();
+	}
 
-// whenever a user connects on port via
-// a websocket, log that a user has connected
-io.on("connection", function(socket: any) {
-    console.log("a user connected");
-    // whenever we receive a 'message' we log it out
-    socket.on("message", function(message: any) {
-      console.log(message);
-    });
-});
+	public config(): void {
+		this.app.set("port", process.env.PORT || 3000);
+		this.io = new Server(this.http, {
+			cors: { origin: "*" } 
+		});
+	}
 
-const server = http.listen(port, function() {
-  console.log(`listening on *: ${port}`);
-});
+	public events() : void {
+		this.io.on("connection", function(socket: any) {
+			console.log("a user connected");
+			// whenever we receive a 'message' we log it out
+			socket.on("message", function(message: any) {
+				console.log(message);
+				socket.emit("message", message);
+			});
+		});
+	}
+
+	public start(): void {
+		this.http.listen(this.port, function() {
+			console.log(`listening on *: ${this.port}`);
+		});
+	}
+
+}
+
+const server = new SocketIO();
+
+server.start();
